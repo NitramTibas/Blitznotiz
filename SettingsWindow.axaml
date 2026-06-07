@@ -1,0 +1,248 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Blitztext.SettingsWindow"
+        Title="Blitztext — Einstellungen"
+        Width="760" Height="660"
+        MinWidth="660" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="0"
+        Background="{DynamicResource BtBackgroundBrush}">
+
+  <DockPanel>
+
+    <!-- Eigene Titelleiste -->
+    <Grid x:Name="TitleBar" DockPanel.Dock="Top" Height="40" ColumnDefinitions="*,Auto"
+          Background="Transparent" PointerPressed="OnTitleBarPointerPressed">
+      <TextBlock Classes="section-header" Text="BLITZTEXT" VerticalAlignment="Center" Margin="16,0,0,0" />
+      <Button Grid.Column="1" Classes="chrome-close" Content="✕" Click="OnClose" />
+    </Grid>
+
+    <!-- Seiten-Kopf mit Trennlinie -->
+    <StackPanel DockPanel.Dock="Top" Margin="20,6,20,0" Spacing="12">
+      <TextBlock Text="Einstellungen" FontSize="22" FontWeight="SemiBold"
+                 Foreground="{DynamicResource BtTextPrimaryBrush}" />
+      <Border Height="1" Background="{DynamicResource BtBorderBrush}" />
+    </StackPanel>
+
+    <!-- Fußzeile: Hinweis + Buttons -->
+    <Grid DockPanel.Dock="Bottom" Margin="20,12,20,18" ColumnDefinitions="*,Auto,Auto">
+      <TextBlock x:Name="MessageText" Grid.Column="0" VerticalAlignment="Center"
+                 TextWrapping="Wrap" IsVisible="False"
+                 Foreground="{DynamicResource BtRecordingBrush}" FontSize="13" />
+      <Button x:Name="CancelButton" Grid.Column="1" Content="Abbrechen" Width="140"
+              Margin="0,0,10,0" Click="OnClose" />
+      <Button x:Name="SaveButton" Grid.Column="2" Classes="accent" Content="Speichern" Width="140"
+              Click="OnSave" />
+    </Grid>
+
+    <!-- Inhalt: Reiter -->
+    <TabControl Margin="12,8,12,0">
+
+      <!-- ── Zugang ─────────────────────────────────────────────── -->
+      <TabItem Header="Zugang">
+        <ScrollViewer>
+          <StackPanel Margin="12,14,12,14" Spacing="16">
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="VERBINDUNG" />
+              <RadioButton x:Name="ModeOwnKey" GroupName="Mode"
+                           Content="Eigener OpenAI-Schlüssel (direkt an OpenAI)" />
+              <RadioButton x:Name="ModeServer" GroupName="Mode"
+                           Content="Eigener Server (Serverlink + App-Passwort)" />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="OPENAI-SCHLÜSSEL" />
+              <TextBox x:Name="OpenAiKeyBox" PasswordChar="•" />
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Verschlüsselt gespeichert (nur dieses Windows-Konto). Feld leer lassen behält den vorhandenen Schlüssel." />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="SERVERLINK" />
+              <TextBox x:Name="ServerUrlBox" Watermark="https://… oder http://100.x.x.x:Port" />
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Nur im Server-Modus nötig. Adresse deines Zbox-Servers." />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="APP-PASSWORT" />
+              <TextBox x:Name="AppPasswordBox" PasswordChar="•" />
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Nur im Server-Modus. Verschlüsselt gespeichert. Feld leer lassen behält das vorhandene." />
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ── Workflows ──────────────────────────────────────────── -->
+      <TabItem Header="Workflows">
+        <ScrollViewer>
+          <StackPanel Margin="12,16,12,16" Spacing="22">
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="TRANSKRIPTIONS-MODELL" />
+              <ComboBox x:Name="TranscriptionModelBox" MinWidth="280" HorizontalAlignment="Left">
+                <ComboBoxItem Content="whisper-1" />
+                <ComboBoxItem Content="gpt-4o-mini-transcribe" />
+                <ComboBoxItem Content="gpt-4o-transcribe" />
+              </ComboBox>
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="whisper-1 ist der sichere Standard (zuverlässig bei Deutsch)." />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="UMSCHREIB-MODELL" />
+              <ComboBox x:Name="RewriteModelBox" MinWidth="280" HorizontalAlignment="Left">
+                <ComboBoxItem Content="gpt-4o-mini" />
+                <ComboBoxItem Content="gpt-4o" />
+                <ComboBoxItem Content="gpt-4.1-mini" />
+              </ComboBox>
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Für verbessert, Dampf ablassen und Emoji. gpt-4o-mini ist schnell und günstig." />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="SPRACHE" />
+              <ComboBox x:Name="LanguageBox" MinWidth="280" HorizontalAlignment="Left">
+                <ComboBoxItem Content="Automatisch" Tag="" />
+                <ComboBoxItem Content="Deutsch" Tag="de" />
+                <ComboBoxItem Content="Englisch" Tag="en" />
+              </ComboBox>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="TON (BEIM VERBESSERN)" />
+              <ComboBox x:Name="ToneBox" MinWidth="280" HorizontalAlignment="Left">
+                <ComboBoxItem Content="Förmlich" Tag="formal" />
+                <ComboBoxItem Content="Neutral" Tag="neutral" />
+                <ComboBoxItem Content="Locker" Tag="casual" />
+              </ComboBox>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="EMOJI-DICHTE" />
+              <ComboBox x:Name="EmojiDensityBox" MinWidth="280" HorizontalAlignment="Left">
+                <ComboBoxItem Content="Wenig" Tag="wenig" />
+                <ComboBoxItem Content="Mittel" Tag="mittel" />
+                <ComboBoxItem Content="Viel" Tag="viel" />
+              </ComboBox>
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="EIGENE WÖRTER" />
+              <TextBox x:Name="CustomTermsBox" AcceptsReturn="True" TextWrapping="Wrap"
+                       Height="80" Watermark="Namen, Marken, Fachbegriffe (durch Komma getrennt)" />
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Hilft, Eigennamen korrekt zu schreiben." />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="HOTKEYS (GEDRÜCKT HALTEN)" />
+              <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Wörtlich" VerticalAlignment="Center"
+                           Foreground="{DynamicResource BtTextPrimaryBrush}" />
+                <ComboBox x:Name="HotkeyTranscribe" Grid.Row="0" Grid.Column="1" MinWidth="160" HorizontalAlignment="Left" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Verbessert" VerticalAlignment="Center"
+                           Foreground="{DynamicResource BtTextPrimaryBrush}" />
+                <ComboBox x:Name="HotkeyImprove" Grid.Row="1" Grid.Column="1" MinWidth="160" HorizontalAlignment="Left" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Dampf ablassen" VerticalAlignment="Center"
+                           Foreground="{DynamicResource BtTextPrimaryBrush}" />
+                <ComboBox x:Name="HotkeySteam" Grid.Row="2" Grid.Column="1" MinWidth="160" HorizontalAlignment="Left" />
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Emoji" VerticalAlignment="Center"
+                           Foreground="{DynamicResource BtTextPrimaryBrush}" />
+                <ComboBox x:Name="HotkeyEmoji" Grid.Row="3" Grid.Column="1" MinWidth="160" HorizontalAlignment="Left" />
+              </Grid>
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Jede Taste nur einmal vergeben. Abbruch ist immer Esc." />
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ── Verhalten ──────────────────────────────────────────── -->
+      <TabItem Header="Verhalten">
+        <ScrollViewer>
+          <StackPanel Margin="12,16,12,16" Spacing="18">
+
+            <CheckBox x:Name="AutoPasteBox" Content="Text automatisch am Cursor einfügen" />
+            <CheckBox x:Name="StrictPasteBox" Content="Nur ins ursprüngliche Fenster einfügen" />
+
+            <StackPanel Spacing="8">
+              <CheckBox x:Name="ClearClipboardBox" Content="Zwischenablage nach dem Einfügen leeren" />
+              <StackPanel Orientation="Horizontal" Spacing="10" Margin="28,0,0,0">
+                <TextBlock Text="nach" VerticalAlignment="Center"
+                           Foreground="{DynamicResource BtTextMutedBrush}" />
+                <NumericUpDown x:Name="ClearSecondsBox" Minimum="1" Maximum="600" Increment="5"
+                               Width="120" />
+                <TextBlock Text="Sekunden" VerticalAlignment="Center"
+                           Foreground="{DynamicResource BtTextMutedBrush}" />
+              </StackPanel>
+            </StackPanel>
+
+            <CheckBox x:Name="LaunchAtLoginBox" Content="Blitztext mit Windows starten" />
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <!-- ── Blitznotiz ─────────────────────────────────────────── -->
+      <TabItem Header="Blitznotiz">
+        <ScrollViewer>
+          <StackPanel Margin="12,10,12,10" Spacing="14">
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="ABLAGE-ORDNER" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <TextBox x:Name="BlitzNoteRootBox" Grid.Column="0"
+                         Watermark="Standard: Dokumente\Blitznotizen" />
+                <Button x:Name="BrowseRootButton" Grid.Column="1" Content="Durchsuchen…"
+                        Click="OnBrowseRoot" />
+              </Grid>
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Hier entstehen die Tages-Dateien (…\2026\2026-06\2026-06-04.md). Leer = Dokumente\Blitznotizen." />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="NOTIZ-TEXT" />
+              <CheckBox x:Name="NoteImprovedBox" Content="Notiztext sprachlich verbessern (statt wörtlich)" />
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Verbessert nutzt das Umschreib-Modell für lesbare Stichpunkte. Wörtlich legt das Gesprochene unverändert ab." />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="BIBLIOTHEK-SEITE" />
+              <ComboBox x:Name="PanelSideBox" MinWidth="280" HorizontalAlignment="Left">
+                <ComboBoxItem Content="Rechts" Tag="right" />
+                <ComboBoxItem Content="Links" Tag="left" />
+              </ComboBox>
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="An welcher Bildschirmkante das schmale Bibliotheks-Panel andockt." />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="HOTKEYS" />
+              <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto" RowSpacing="8">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Notiz aufnehmen (halten)" VerticalAlignment="Center"
+                           Foreground="{DynamicResource BtTextPrimaryBrush}" />
+                <ComboBox x:Name="HotkeyNote" Grid.Row="0" Grid.Column="1" MinWidth="160" HorizontalAlignment="Left" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Bibliothek (kurz tippen)" VerticalAlignment="Center"
+                           Foreground="{DynamicResource BtTextPrimaryBrush}" />
+                <ComboBox x:Name="HotkeyLibrary" Grid.Row="1" Grid.Column="1" MinWidth="160" HorizontalAlignment="Left" />
+              </Grid>
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Notiz aufnehmen wird gehalten (wie Diktat), Bibliothek nur kurz getippt. Jede Taste nur einmal vergeben." />
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+    </TabControl>
+
+  </DockPanel>
+</Window>

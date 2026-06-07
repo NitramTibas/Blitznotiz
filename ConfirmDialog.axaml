@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Blitztext.ConfirmDialog"
+        Title="Bestätigung"
+        Width="440" SizeToContent="Height"
+        ShowInTaskbar="False"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="NoChrome"
+        ExtendClientAreaTitleBarHeightHint="0"
+        Background="{DynamicResource BtBackgroundBrush}">
+  <DockPanel LastChildFill="True">
+
+    <Grid x:Name="TitleBar" DockPanel.Dock="Top" Height="40" ColumnDefinitions="*,Auto"
+          Background="Transparent" PointerPressed="OnTitleBarPointerPressed">
+      <TextBlock Classes="section-header" Text="BLITZTEXT" VerticalAlignment="Center" Margin="16,0,0,0" />
+      <Button Grid.Column="1" Classes="chrome-close" Content="✕" Click="OnSecondary" />
+    </Grid>
+
+    <StackPanel Margin="24,8,24,22" Spacing="14">
+      <TextBlock x:Name="HeaderText" FontSize="16" FontWeight="SemiBold"
+                 Foreground="{DynamicResource BtTextPrimaryBrush}" TextWrapping="Wrap" />
+      <TextBlock x:Name="BodyText" FontSize="13" LineHeight="20"
+                 Foreground="{DynamicResource BtTextMutedBrush}" TextWrapping="Wrap" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,8,0,0">
+        <Button x:Name="SecondaryButton" Content="Abbrechen" MinWidth="120" Click="OnSecondary" />
+        <Button x:Name="PrimaryButton" Content="Löschen" MinWidth="150" Classes="accent" Click="OnPrimary" />
+      </StackPanel>
+    </StackPanel>
+
+  </DockPanel>
+</Window>

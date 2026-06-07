@@ -1,0 +1,15 @@
+# Build-Artefakte (.NET)
+bin/
+obj/
+dist/
+.vs/
+*.user
+
+# Interne Übergabe & Server-Deployment — NICHT veröffentlichen
+UEBERGABE.md
+deploy/
+
+# Geheimnisse / lokale Daten — niemals einchecken
+.env
+*.dat
+debug.log

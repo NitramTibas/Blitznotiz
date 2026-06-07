@@ -1,0 +1,41 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Blitztext.App"
+             RequestedThemeVariant="Dark">
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Blitztext/Theme/Tokens.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <!-- Blitztext-Akzent (#7CC7FF). Fluent leitet Hover/Pressed daraus ab; App läuft fest auf Dark. -->
+        <ColorPaletteResources x:Key="Dark" Accent="#7CC7FF" RegionColor="#050608" />
+      </FluentTheme.Palettes>
+    </FluentTheme>
+    <!-- Blitztext-Control-Styles NACH FluentTheme → gewinnen gegen Fluent-Defaults. -->
+    <StyleInclude Source="avares://Blitztext/Theme/Controls.axaml" />
+  </Application.Styles>
+
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <TrayIcon Icon="{Binding TrayIcon}"
+                ToolTipText="{Binding TrayTooltip}"
+                IsVisible="True">
+        <TrayIcon.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="Einstellungen…" Command="{Binding OpenSettingsCommand}" />
+            <NativeMenuItemSeparator />
+            <NativeMenuItem Header="Beenden" Command="{Binding QuitCommand}" />
+          </NativeMenu>
+        </TrayIcon.Menu>
+      </TrayIcon>
+    </TrayIcons>
+  </TrayIcon.Icons>
+
+</Application>

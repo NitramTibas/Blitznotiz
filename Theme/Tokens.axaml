@@ -1,0 +1,70 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Blitztext Design-Tokens — eine Quelle der Wahrheit. Farben/Form aus dem ORAH-Design-System
+    übernommen (tiefes Schwarz, Haarlinien, Cyan-Akzent). C#-Spiegel: BtPalette.cs (Icon-Rendering).
+    Farb-Tokens NUR über {DynamicResource …} referenzieren (ThemeDictionaries-Pflicht).
+    Nicht-Farb-Tokens (Radien, Schriftgrößen) via StaticResource.
+  -->
+
+  <CornerRadius x:Key="BtRadiusControl">10</CornerRadius>
+  <CornerRadius x:Key="BtRadiusCard">12</CornerRadius>
+  <CornerRadius x:Key="BtRadiusPill">999</CornerRadius>
+
+  <x:Double x:Key="BtFontDisplay">42</x:Double>
+  <x:Double x:Key="BtFontTitle">20</x:Double>
+  <x:Double x:Key="BtFontBody">15</x:Double>
+  <x:Double x:Key="BtFontHeader">13</x:Double>
+  <x:Double x:Key="BtFontMeta">12</x:Double>
+
+  <ResourceDictionary.ThemeDictionaries>
+
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="BtBackgroundBrush">#050608</SolidColorBrush>
+      <SolidColorBrush x:Key="BtSurfaceBrush">#111827</SolidColorBrush>
+      <SolidColorBrush x:Key="BtSurface2Brush">#1F2937</SolidColorBrush>
+      <SolidColorBrush x:Key="BtBorderBrush">#2B3442</SolidColorBrush>
+      <SolidColorBrush x:Key="BtTextPrimaryBrush">#EAF2FA</SolidColorBrush>
+      <SolidColorBrush x:Key="BtTextMutedBrush">#8A97A8</SolidColorBrush>
+      <SolidColorBrush x:Key="BtGlowBrush">#8FD8FF</SolidColorBrush>
+      <SolidColorBrush x:Key="BtAccentBrush">#7CC7FF</SolidColorBrush>
+      <SolidColorBrush x:Key="BtTranscribingBrush">#76E4F7</SolidColorBrush>
+      <SolidColorBrush x:Key="BtRecordingBrush">#FF5C5C</SolidColorBrush>
+      <SolidColorBrush x:Key="BtSuccessBrush">#5FE3A8</SolidColorBrush>
+      <SolidColorBrush x:Key="BtWarningBrush">#F0B36A</SolidColorBrush>
+      <SolidColorBrush x:Key="BtOnAccentBrush">#050608</SolidColorBrush>
+
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked">#050608</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver">#050608</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed">#050608</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked">#7CC7FF</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver">#8FD8FF</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed">#76E4F7</SolidColorBrush>
+    </ResourceDictionary>
+
+    <ResourceDictionary x:Key="Default">
+      <SolidColorBrush x:Key="BtBackgroundBrush">#050608</SolidColorBrush>
+      <SolidColorBrush x:Key="BtSurfaceBrush">#111827</SolidColorBrush>
+      <SolidColorBrush x:Key="BtSurface2Brush">#1F2937</SolidColorBrush>
+      <SolidColorBrush x:Key="BtBorderBrush">#2B3442</SolidColorBrush>
+      <SolidColorBrush x:Key="BtTextPrimaryBrush">#EAF2FA</SolidColorBrush>
+      <SolidColorBrush x:Key="BtTextMutedBrush">#8A97A8</SolidColorBrush>
+      <SolidColorBrush x:Key="BtGlowBrush">#8FD8FF</SolidColorBrush>
+      <SolidColorBrush x:Key="BtAccentBrush">#7CC7FF</SolidColorBrush>
+      <SolidColorBrush x:Key="BtTranscribingBrush">#76E4F7</SolidColorBrush>
+      <SolidColorBrush x:Key="BtRecordingBrush">#FF5C5C</SolidColorBrush>
+      <SolidColorBrush x:Key="BtSuccessBrush">#5FE3A8</SolidColorBrush>
+      <SolidColorBrush x:Key="BtWarningBrush">#F0B36A</SolidColorBrush>
+      <SolidColorBrush x:Key="BtOnAccentBrush">#050608</SolidColorBrush>
+
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundChecked">#050608</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver">#050608</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedPressed">#050608</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillChecked">#7CC7FF</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver">#8FD8FF</SolidColorBrush>
+      <SolidColorBrush x:Key="CheckBoxCheckBackgroundFillCheckedPressed">#76E4F7</SolidColorBrush>
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

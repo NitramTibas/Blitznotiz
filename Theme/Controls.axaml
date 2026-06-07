@@ -1,0 +1,131 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Blitztext Control-Styles, leichtgewichtig auf dem FluentTheme (ORAH-Design-System).
+    Akzent (#7CC7FF) kommt über FluentTheme.Palettes in App.axaml. Farben via {DynamicResource …}.
+  -->
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource BtBackgroundBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtTextPrimaryBrush}" />
+  </Style>
+
+  <!-- Dünn-gesperrter Versal-Header über Gruppen (ZUGANG, WORKFLOWS …). ORAH-Signatur. -->
+  <Style Selector="TextBlock.section-header">
+    <Setter Property="FontSize" Value="{StaticResource BtFontHeader}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtTextMutedBrush}" />
+    <Setter Property="FontWeight" Value="Normal" />
+    <Setter Property="LetterSpacing" Value="2.2" />
+  </Style>
+
+  <Style Selector="TextBlock.display-value">
+    <Setter Property="FontSize" Value="{StaticResource BtFontDisplay}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtTextPrimaryBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="{StaticResource BtFontTitle}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtTextPrimaryBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="TextBlock.meta">
+    <Setter Property="FontSize" Value="{StaticResource BtFontMeta}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtTextMutedBrush}" />
+  </Style>
+
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource BtSurfaceBrush}" />
+    <Setter Property="CornerRadius" Value="{StaticResource BtRadiusCard}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BtBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="Border.input">
+    <Setter Property="Background" Value="{DynamicResource BtSurface2Brush}" />
+    <Setter Property="CornerRadius" Value="{StaticResource BtRadiusControl}" />
+  </Style>
+
+  <Style Selector="Button">
+    <Setter Property="CornerRadius" Value="{StaticResource BtRadiusControl}" />
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="Padding" Value="16,8" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="Button.orah-primary">
+    <Setter Property="MinHeight" Value="46" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="CornerRadius" Value="{StaticResource BtRadiusControl}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <!-- Eigener Schließen-Button (Titelleiste): dezent, Hover ruhiges Grau statt Windows-Rot. -->
+  <Style Selector="Button.chrome-close">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource BtTextMutedBrush}" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Width" Value="46" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.chrome-close /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="0" />
+  </Style>
+  <Style Selector="Button.chrome-close:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BtSurface2Brush}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtTextPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.chrome-close:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BtSurfaceBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtTextPrimaryBrush}" />
+  </Style>
+
+  <!-- Akzent-Button: dunkler Text auf Cyan in ALLEN Zuständen (Hover/Pressed bleibt kontrastreich). -->
+  <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BtAccentBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtOnAccentBrush}" />
+  </Style>
+  <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BtGlowBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtOnAccentBrush}" />
+  </Style>
+  <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource BtTranscribingBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource BtOnAccentBrush}" />
+  </Style>
+
+  <Style Selector="CheckBox">
+    <Setter Property="Foreground" Value="{DynamicResource BtTextPrimaryBrush}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="CheckBox:pointerover /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource BtTextPrimaryBrush}" />
+  </Style>
+
+  <!-- Reiter (Tabs): ruhig, ausgewählter Reiter hell; Auswahl-Linie nutzt den Akzent (Fluent). -->
+  <Style Selector="TabItem">
+    <Setter Property="Foreground" Value="{DynamicResource BtTextMutedBrush}" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="Padding" Value="14,6" />
+    <Setter Property="MinHeight" Value="40" />
+  </Style>
+  <Style Selector="TabItem:selected">
+    <Setter Property="Foreground" Value="{DynamicResource BtTextPrimaryBrush}" />
+  </Style>
+  <Style Selector="TabItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Foreground" Value="{DynamicResource BtTextPrimaryBrush}" />
+  </Style>
+
+</Styles>
