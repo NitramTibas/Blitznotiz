@@ -31,6 +31,11 @@ the same and what changed.
 - **Server mode:** an optional OpenAI-compatible proxy that checks an app password and keeps the real
   key on the server — so others can use it without a key of their own. Restricted to `https://` and
   private/Tailscale addresses.
+- **Clipboard auto-clear:** the pasted text is removed from the clipboard after a configurable number
+  of seconds. The original deliberately leaves it on the clipboard.
+- **Connection pre-warming:** the network connection (DNS + TCP + TLS) is opened ahead of time and the
+  pooled connection is kept warm between dictations, so a dictation after a pause responds faster. (The
+  original's "prewarm" only loads the local Whisper model.)
 - **Own icon & branding**, independent of the original.
 
 ## Not (yet) carried over

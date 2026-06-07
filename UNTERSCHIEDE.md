@@ -31,6 +31,11 @@ gleich blieb und was sich geändert hat.
 - **Server-Modus:** ein optionaler OpenAI-kompatibler Proxy, der ein App-Passwort prüft und den echten
   Schlüssel auf dem Server hält — so können andere ohne eigenen Schlüssel mitnutzen. Beschränkt auf
   `https://` und private/Tailscale-Adressen.
+- **Zwischenablage zeitgesteuert leeren:** Der eingefügte Text wird nach einer einstellbaren Sekundenzahl
+  wieder aus der Zwischenablage entfernt (das Original lässt ihn bewusst liegen).
+- **Verbindung vorwärmen:** Die Netzverbindung (DNS + TCP + TLS) wird vorab geöffnet und zwischen Diktaten
+  warm gehalten, damit ein Diktat nach einer Pause schneller antwortet. (Das „prewarm" im Original lädt nur
+  das lokale Whisper-Modell.)
 - **Eigenes Icon & Branding**, unabhängig vom Original.
 
 ## (Noch) nicht übernommen
