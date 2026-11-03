@@ -1,0 +1,93 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and package Windows x64
+    runs-on: windows-2022
+    timeout-minutes: 20
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up .NET 9 SDK
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '9.0.x'
+      - name: Restore Windows dependencies
+        run: dotnet restore Blitztext.csproj --runtime win-x64 -p:SelfContained=true -p:PublishSingleFile=true
+      - name: Build
+        run: dotnet build Blitztext.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore
+      - name: Run test projects when present
+        run: |
+          $testProjects = @(Get-ChildItem -Path tests -Filter *.csproj -Recurse -ErrorAction SilentlyContinue)
+          if ($testProjects.Count -eq 0) {
+            Write-Warning 'No test projects exist yet. This run verifies compilation and packaging only.'
+            'Automated tests: NOT PRESENT. Windows input/audio/paste acceptance: NOT RUN.' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          } else {
+            foreach ($testProject in $testProjects) {
+              dotnet test $testProject.FullName --configuration Release --logger trx --results-directory TestResults
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+          }
+      - name: Package self-contained executable
+        run: >
+          dotnet publish Blitztext.csproj --configuration Release --runtime win-x64 --self-contained true
+          --no-restore -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true -p:DebugType=None -p:DebugSymbols=false
+          --output dist
+      - name: Add license and build information
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+          BUILD_REF: ${{ github.ref }}
+        run: |
+          Copy-Item -LiteralPath LICENSE -Destination dist/LICENSE.txt
+          Copy-Item -LiteralPath docs/BUILD_AND_TEST.md -Destination dist/BUILD_AND_TEST.md
+          @(
+            "Repository: $env:GITHUB_REPOSITORY"
+            "Commit: $env:BUILD_COMMIT"
+            "Ref: $env:BUILD_REF"
+            "Run: $env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"
+            "SDK: $(dotnet --version)"
+            'Development build. See commit changes for implemented features.'
+            'Physical mouse, microphone and target-application acceptance must be tested on Windows.'
+          ) | Set-Content -LiteralPath dist/BUILD-INFO.txt -Encoding utf8
+          if (-not (Test-Path -LiteralPath dist/Blitztext.exe)) { throw 'Expected executable is missing.' }
+          Get-FileHash -LiteralPath dist/Blitztext.exe -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash)  Blitztext.exe" } |
+            Set-Content -LiteralPath dist/SHA256SUMS.txt -Encoding ascii
+      - name: Upload Windows application
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Blitznotiz-win-x64-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ github.sha }}
+          path: TestResults/
+          if-no-files-found: ignore
+          retention-days: 14
