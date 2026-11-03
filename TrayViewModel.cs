@@ -327,6 +327,11 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
             return;
         }
 
+        if (waitForModifiers && Paster.AreModifiersPressed())
+        {
+            Toast.Show("Text liegt in der Zwischenablage – zum Einfügen zuerst die Zusatztasten loslassen.", ToastKind.Info);
+            return;
+        }
         uint sent = Paster.SendCtrlV();
         Logger.Log($"Einfügen: Ziel={targetWindow}, refokussiert={refocused}, FensterBeimEinfügen={fg}, SendInput={sent}");
         if (sent != 4) return;

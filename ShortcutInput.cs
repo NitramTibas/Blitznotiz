@@ -40,6 +40,7 @@ internal sealed class ShortcutInput
 
     public void CancelCapture()
     {
+        if (!_capturing) return; // Closing ordinary settings must not suppress a held legacy key's release.
         _capturing = false;
         _captureResult = null;
         _captureHasResult = false;

@@ -132,6 +132,19 @@ public sealed class ShortcutTests
     }
 
     [Fact]
+    public void ClosingOrdinarySettingsDoesNotLoseHeldHotkeyRelease()
+    {
+        var fake = new SessionHarness();
+        Assert.True(fake.Input.Process(0x78, true));
+        fake.RunMicrophoneStart();
+        fake.Input.CancelCapture(); // Settings closes without ever entering capture mode.
+        Assert.True(fake.Input.Process(0x78, false));
+        Assert.Equal(RecordingState.Processing, fake.Gate.State);
+        fake.FinishProcessing();
+        Assert.Equal(1, fake.Deliveries);
+    }
+
+    [Fact]
     public void HeldLegacyKeyStillReleasesAfterItsBindingIsChanged()
     {
         var input = Input();
