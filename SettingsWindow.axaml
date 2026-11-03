@@ -141,6 +141,27 @@
             </StackPanel>
 
             <StackPanel Spacing="8">
+              <TextBlock Classes="section-header" Text="AUFNAHME-SHORTCUT (START / STOPP)" />
+              <CheckBox x:Name="ShortcutEnabled" Content="Zusätzlichen Aufnahme-Shortcut aktivieren" />
+              <TextBlock x:Name="ShortcutLabel" TextWrapping="Wrap"
+                         Foreground="{DynamicResource BtTextPrimaryBrush}" />
+              <WrapPanel>
+                <Button x:Name="CaptureShortcutButton" Content="Shortcut aufnehmen…" Click="OnCaptureShortcut" Margin="0,0,8,8" />
+                <Button x:Name="MiddleShortcutButton" Content="Mittlere Maustaste" Click="OnMiddleShortcut" Margin="0,0,0,8" />
+              </WrapPanel>
+              <ComboBox x:Name="ShortcutWorkflow" MinWidth="280" HorizontalAlignment="Left">
+                <ComboBoxItem Content="Wörtlich" Tag="Transcribe" />
+                <ComboBoxItem Content="Verbessert" Tag="Improve" />
+                <ComboBoxItem Content="Dampf ablassen" Tag="Steam" />
+                <ComboBoxItem Content="Emoji" Tag="Emoji" />
+              </ComboBox>
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Einmal drücken: aufnehmen. Erneut drücken: stoppen und verarbeiten. Esc bricht ab. Änderungen gelten ab der nächsten Aufnahme." />
+              <TextBlock Classes="meta" TextWrapping="Wrap"
+                         Text="Der belegte Mittelklick wird bei aktiviertem Shortcut in anderen Programmen unterdrückt. Das Mausrad scrollt weiter normal. Alternativ eine Tastenkombination aufnehmen; Zusatztasten vor dem Einfügen loslassen. Windows-reservierte Kombinationen sind nicht verfügbar." />
+            </StackPanel>
+
+            <StackPanel Spacing="8">
               <TextBlock Classes="section-header" Text="HOTKEYS (GEDRÜCKT HALTEN)" />
               <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Wörtlich" VerticalAlignment="Center"

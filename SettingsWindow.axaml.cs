@@ -17,6 +17,14 @@ public partial class SettingsWindow : Window
 
     // Vom Aufrufer (TrayViewModel) abgefragt: wurde gespeichert? Dann Einstellungen neu laden.
     public bool Saved { get; private set; }
+    internal event Action? CaptureShortcutRequested;
+    private DictationShortcut _shortcutDraft = new();
+    private bool _capturingShortcut;
+    private readonly CheckBox _shortcutEnabled;
+    private readonly TextBlock _shortcutLabel;
+    private readonly ComboBox _shortcutWorkflow;
+    private readonly Button _captureShortcutButton;
+    private readonly Button _middleShortcutButton;
 
     // Steuerelemente (manueller XAML-Loader → Zugriff über FindControl).
     private readonly TextBlock _message;
@@ -80,6 +88,11 @@ public partial class SettingsWindow : Window
         _panelSideBox = this.FindControl<ComboBox>("PanelSideBox")!;
         _hkNote = this.FindControl<ComboBox>("HotkeyNote")!;
         _hkLibrary = this.FindControl<ComboBox>("HotkeyLibrary")!;
+        _shortcutEnabled = this.FindControl<CheckBox>("ShortcutEnabled")!;
+        _shortcutLabel = this.FindControl<TextBlock>("ShortcutLabel")!;
+        _shortcutWorkflow = this.FindControl<ComboBox>("ShortcutWorkflow")!;
+        _captureShortcutButton = this.FindControl<Button>("CaptureShortcutButton")!;
+        _middleShortcutButton = this.FindControl<Button>("MiddleShortcutButton")!;
 
         LoadValues();
     }
@@ -88,6 +101,10 @@ public partial class SettingsWindow : Window
 
     private void LoadValues()
     {
+        _shortcutDraft = (_initial.DictationShortcut ?? new DictationShortcut()).Copy();
+        _shortcutEnabled.IsChecked = _shortcutDraft.Enabled;
+        _shortcutLabel.Text = _shortcutDraft.DisplayName;
+        SelectByTag(_shortcutWorkflow, _shortcutDraft.Workflow.ToString(), "Transcribe");
         _modeOwnKey.IsChecked = _initial.Mode == ConnectionMode.OwnKey;
         _modeServer.IsChecked = _initial.Mode == ConnectionMode.Server;
 
@@ -144,6 +161,11 @@ public partial class SettingsWindow : Window
 
     private void OnSave(object? sender, RoutedEventArgs e)
     {
+        if (_capturingShortcut)
+        {
+            ShowMessage("Bitte den Shortcut vollständig loslassen oder die Auswahl mit Esc abbrechen.");
+            return;
+        }
         var t = ContentOf(_hkTranscribe);
         var i = ContentOf(_hkImprove);
         var st = ContentOf(_hkSteam);
@@ -162,6 +184,13 @@ public partial class SettingsWindow : Window
             ShowMessage("Jede Hotkey-Taste darf nur einmal vergeben sein.");
             return;
         }
+
+        var shortcut = _shortcutDraft.Copy();
+        shortcut.Enabled = _shortcutEnabled.IsChecked == true;
+        shortcut.Workflow = Enum.TryParse<WorkflowKind>(TagOf(_shortcutWorkflow), out var workflow)
+            ? workflow : WorkflowKind.Transcribe;
+        var shortcutError = shortcut.Validate(keys.Select(k => KeyNames.ToVk(k) ?? -1));
+        if (shortcutError != null) { ShowMessage(shortcutError); return; }
 
         bool isServer = _modeServer.IsChecked == true;
         var serverUrl = _serverUrlBox.Text?.Trim() ?? "";
@@ -192,6 +221,7 @@ public partial class SettingsWindow : Window
             BlitzNoteRoot = _blitzNoteRootBox.Text?.Trim() ?? "",
             BlitzNotePanelSide = TagOf(_panelSideBox) ?? "right",
             BlitzNoteImproved = _noteImprovedBox.IsChecked == true,
+            DictationShortcut = shortcut,
             Hotkeys = new HotkeyConfig { Transcribe = t!, Improve = i!, Steam = st!, Emoji = em!, Note = note!, Library = lib! }
         };
 
@@ -213,6 +243,35 @@ public partial class SettingsWindow : Window
     {
         _message.Text = text;
         _message.IsVisible = true;
+    }
+
+    private void OnCaptureShortcut(object? sender, RoutedEventArgs e)
+    {
+        if (CaptureShortcutRequested == null) return;
+        _capturingShortcut = true;
+        _captureShortcutButton.IsEnabled = false;
+        _middleShortcutButton.IsEnabled = false;
+        _shortcutLabel.Text = "Jetzt Tastenkombination oder mittlere Maustaste drücken und loslassen …";
+        ShowMessage("Während der Auswahl sind Aufnahme-Hotkeys pausiert. Esc bricht die Auswahl ab.");
+        CaptureShortcutRequested.Invoke();
+    }
+
+    internal void CompleteShortcutCapture(DictationShortcut? binding)
+    {
+        if (!_capturingShortcut) return;
+        if (binding != null) { _shortcutDraft.Key = binding.Key; _shortcutDraft.Modifiers = binding.Modifiers; }
+        _capturingShortcut = false;
+        _captureShortcutButton.IsEnabled = true;
+        _middleShortcutButton.IsEnabled = true;
+        _shortcutLabel.Text = _shortcutDraft.DisplayName;
+        ShowMessage(binding == null ? "Shortcut-Auswahl abgebrochen." : "Shortcut gewählt. Mit Speichern übernehmen.");
+    }
+
+    private void OnMiddleShortcut(object? sender, RoutedEventArgs e)
+    {
+        _shortcutDraft.Key = DictationShortcut.MiddleButton;
+        _shortcutDraft.Modifiers = ShortcutModifiers.None;
+        _shortcutLabel.Text = _shortcutDraft.DisplayName;
     }
 
     // ── Serverlink-Sicherheit ─────────────────────────────────────────────────────

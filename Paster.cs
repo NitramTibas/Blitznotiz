@@ -89,6 +89,14 @@ public static class Paster
     // ── Zielfenster merken / reaktivieren ───────────────────────────────────────
     public static IntPtr GetActiveWindow() => GetForegroundWindow();
 
+    // Called outside the hook callback, after Windows has updated asynchronous key state.
+    internal static bool IsKeyPressed(int key) => (GetAsyncKeyState(key) & 0x8000) != 0;
+    internal static bool AreModifiersPressed() => IsKeyPressed(0x10) || IsKeyPressed(0x11) ||
+        IsKeyPressed(0x12) || IsKeyPressed(0x5B) || IsKeyPressed(0x5C);
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int key);
+
     public static bool RefocusIfNeeded(IntPtr target)
     {
         if (target == IntPtr.Zero) return false;

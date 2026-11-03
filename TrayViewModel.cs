@@ -19,16 +19,17 @@ namespace Blitztext;
 /// </summary>
 internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
 {
-    private enum AppState { Idle, Recording, Processing }
-
     private readonly TrayAnimator _animator;
     private Settings _settings;
     private readonly KeyboardHook _hook;
-    private readonly Recorder _recorder = new();
+    private readonly MouseHook? _mouseHook;
+    private readonly ShortcutInput _input = new();
+    private readonly RecordingGate _recording = new();
+    private Recorder? _recorder;
+    private bool _disposed;
     // Werden bei RebuildHotkeyMap als ganze, neue Instanzen ausgetauscht (atomarer Referenz-Swap),
     // statt in-place geleert/befüllt – so sieht der Hook-Thread immer einen konsistenten Stand.
     private Dictionary<int, WorkflowKind> _map = new();
-    private HashSet<int> _swallow = new();
     private int _noteVk = -1;      // Blitznotiz aufnehmen (Push-to-talk, legt nur ab)
     private int _libraryVk = -1;   // Bibliothek auf/zu (Toggle, kein Halten)
 
@@ -37,13 +38,11 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
     private WindowIcon _trayIcon;
     private string _trayTooltip = AppBrand.Name;
 
-    private AppState _state = AppState.Idle;
-    private int _activeKey;
     private WorkflowKind _activeKind;
     private bool _activeIsNote;
     private IntPtr _targetWindow;
     private CancellationTokenSource? _cts;
-    private int _session; // zählt jede neue Aufnahme; entwertet veraltete Verarbeitungs-Tasks
+    private bool _waitForModifiers;
 
     public TrayViewModel()
     {
@@ -58,9 +57,21 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
 
         RebuildHotkeyMap();
 
-        _hook = new KeyboardHook { SwallowKey = vk => _swallow.Contains(vk) };
-        _hook.KeyPressed += OnKeyPressed;
-        _hook.KeyReleased += OnKeyReleased;
+        _input.LegacyPressed += OnKeyPressed;
+        _input.LegacyReleased += OnKeyReleased;
+        _input.TogglePressed += OnTogglePressed;
+        _input.EscapePressed += HandleEscape;
+        // Seed only genuinely held keys. Their releases must pass through (their downs preceded our hook).
+        for (int vk = 1; vk <= 0xFE; vk++)
+            if (vk != 1 && vk != 2 && vk != 5 && vk != 6 && vk != 0x10 && vk != 0x11 && vk != 0x12 &&
+                Paster.IsKeyPressed(vk)) _input.SeedPressed(vk);
+        _hook = new KeyboardHook { ProcessInput = (key, down) => _input.Process(key, down) };
+        try { _mouseHook = new MouseHook((key, down) => _input.Process(key, down)); }
+        catch (Exception ex)
+        {
+            Logger.Log(ex.Message);
+            Dispatcher.UIThread.Post(() => Toast.Show(ex.Message + " Tastatur-Hotkeys bleiben verfügbar.", ToastKind.Error));
+        }
 
         Logger.Log($"Blitztext gestartet (Avalonia). Transkription={_settings.TranscriptionModel}, AutoPaste={_settings.AutoPaste}.");
 
@@ -97,6 +108,7 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
             if (KeyNames.ToVk(name) is int vk) { map[vk] = kind; swallow.Add(vk); }
         }
 
+        _settings.Hotkeys ??= new HotkeyConfig();
         Add(_settings.Hotkeys.Transcribe, WorkflowKind.Transcribe);
         Add(_settings.Hotkeys.Improve, WorkflowKind.Improve);
         Add(_settings.Hotkeys.Steam, WorkflowKind.Steam);
@@ -110,7 +122,7 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
 
         // Atomar austauschen – der Tastatur-Hook liest stets eine vollständige Instanz.
         _map = map;
-        _swallow = swallow;
+        _input.Configure(swallow, _settings.DictationShortcut);
         _noteVk = noteVk;
         _libraryVk = libraryVk;
     }
@@ -118,54 +130,75 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
     // ── Tasten (Hook-Callback läuft auf dem UI-Thread) ──────────────────────────
     private void OnKeyPressed(int key)
     {
-        if (key == KeyNames.VK_ESCAPE)
-        {
-            if (_state != AppState.Idle) Dispatcher.UIThread.Post(HandleEscape);
-            return;
-        }
-        if (_state != AppState.Idle) return;
-        if (key == _libraryVk) { Dispatcher.UIThread.Post(ToggleLibrary); return; }
+        if (_disposed || _recording.State != RecordingState.Idle) return;
+        if (key == _libraryVk) { Dispatcher.UIThread.Post(() => { if (!_disposed) ToggleLibrary(); }); return; }
         if (!_map.TryGetValue(key, out var kind)) return;
-
-        _state = AppState.Recording;
-        _session++;
-        _activeKey = key;
-        _activeKind = kind;
-        _activeIsNote = key == _noteVk;
-        _targetWindow = Paster.GetActiveWindow();
-        int session = _session;
-        UpdateUi();
-        Dispatcher.UIThread.Post(() => StartCapture(session));
+        BeginRecording(key, kind, key == _noteVk, false);
     }
 
-    private void OnKeyReleased(int key)
+    private void OnTogglePressed(DictationShortcut binding)
     {
-        if (_state == AppState.Recording && key == _activeKey)
+        if (_disposed) return;
+        if (_recording.State == RecordingState.Idle)
         {
-            _state = AppState.Processing;
-            int session = _session;
+            _input.ActiveToggle = binding.Copy();
+            BeginRecording(RecordingGate.ToggleTrigger, binding.Workflow, false,
+                binding.Key != DictationShortcut.MiddleButton || binding.Modifiers != ShortcutModifiers.None);
+        }
+        else StopRecording(RecordingGate.ToggleTrigger);
+    }
+
+    private void BeginRecording(int trigger, WorkflowKind kind, bool isNote, bool waitForModifiers)
+    {
+        if (!_recording.TryStart(trigger)) return;
+        _activeKind = kind;
+        _activeIsNote = isNote;
+        _waitForModifiers = waitForModifiers;
+        _targetWindow = Paster.GetActiveWindow();
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
+        int session = _recording.Session;
+        Dispatcher.UIThread.Post(() => { if (!_disposed) { UpdateUi(); StartCapture(session); } });
+    }
+
+    private void OnKeyReleased(int key) => StopRecording(key);
+
+    private void StopRecording(int trigger)
+    {
+        if (!_disposed && _recording.TryStop(trigger))
+        {
+            int session = _recording.Session;
             var kind = _activeKind;
             var isNote = _activeIsNote;
             var target = _targetWindow;
-            UpdateUi();
-            Dispatcher.UIThread.Post(() => _ = StopAndProcessAsync(session, kind, target, isNote));
+            var waitForModifiers = _waitForModifiers;
+            var recorder = _recorder;
+            var token = _cts?.Token ?? CancellationToken.None;
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_disposed || !_recording.IsCurrent(session)) return;
+                UpdateUi();
+                _ = StopAndProcessAsync(session, kind, target, isNote, recorder, token, waitForModifiers);
+            });
         }
     }
 
     private void StartCapture(int session)
     {
-        if (session != _session || _state != AppState.Recording) return;
+        if (_disposed || !_recording.TryBeginCapture(session)) return;
         try
         {
-            _cts?.Dispose();
-            _cts = new CancellationTokenSource();
+            // Each session owns its recorder; a late NAudio callback can never close the next one.
+            _recorder = new Recorder();
             _recorder.Start();
             Logger.Log($"Aufnahme gestartet (Modus {_activeKind}, Ziel-Fenster {_targetWindow}).");
             WarmUpConnection();
         }
         catch (Exception ex)
         {
-            if (session == _session) { _state = AppState.Idle; UpdateUi(); }
+            _recorder?.Dispose();
+            _recorder = null;
+            ResetIdle(session);
             Logger.Log("Mikrofon-Fehler: " + ex.Message);
             Toast.Show("Mikrofon-Fehler: " + ex.Message, ToastKind.Error);
         }
@@ -183,22 +216,34 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
 
     private void HandleEscape()
     {
-        _session++;
-        _cts?.Cancel();
-        if (_state == AppState.Recording) _recorder.Cancel();
-        _state = AppState.Idle;
-        UpdateUi();
+        if (_disposed || _recording.State == RecordingState.Idle) return;
+        _recording.Cancel(); // invalidate queued starts and late results before returning from the hook
+        _input.ActiveToggle = null;
+        var recorder = _recorder;
+        var cts = _cts;
+        _recorder = null;
+        _cts = null;
+        Dispatcher.UIThread.Post(() =>
+        {
+            cts?.Cancel();
+            recorder?.Cancel();
+            recorder?.Dispose();
+            cts?.Dispose();
+            if (!_disposed) UpdateUi();
+        });
     }
 
-    private async Task StopAndProcessAsync(int mySession, WorkflowKind kind, IntPtr targetWindow, bool isNote)
+    private async Task StopAndProcessAsync(int mySession, WorkflowKind kind, IntPtr targetWindow, bool isNote,
+        Recorder? recorder, CancellationToken token, bool waitForModifiers)
     {
         var settings = _settings; // ein Diktat arbeitet konsistent gegen EINEN Settings-Stand (verhindert Misch-Zustand, falls währenddessen gespeichert wird)
         var sw = Stopwatch.StartNew();
-        var token = _cts?.Token ?? CancellationToken.None;
         string? capturedPath = null;
         try
         {
-            var (path, seconds) = await _recorder.StopAsync();
+            // A down/up/down sequence may finish before the queued microphone start runs.
+            if (recorder == null || IsStale(mySession, token)) return;
+            var (path, seconds) = await recorder.StopAsync();
             capturedPath = path;
             if (IsStale(mySession, token)) return;
             var bytes = !string.IsNullOrEmpty(path) && File.Exists(path) ? new FileInfo(path).Length : 0;
@@ -234,29 +279,45 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
             if (isNote)
                 await DeliverBlitzNoteAsync(result.Trim(), mySession, settings);
             else
-                await DeliverResultAsync(result.Trim(), targetWindow, mySession, settings);
+                await DeliverResultAsync(result.Trim(), targetWindow, mySession, settings, waitForModifiers);
         }
         catch (OperationCanceledException) { Logger.Log("Abgebrochen (Esc/Timeout)."); }
         catch (OpenAiException ex) { Logger.Log("OpenAI-Fehler: " + ex.Message); }
         catch (Exception ex) { Logger.Log("Unerwarteter Fehler: " + ex.Message); }
         finally
         {
-            if (mySession == _session) { _recorder.DeleteFile(); ResetIdle(); }
-            else if (!string.IsNullOrEmpty(capturedPath)) { try { File.Delete(capturedPath); } catch { } }
+            recorder?.Dispose();
+            if (ReferenceEquals(_recorder, recorder)) _recorder = null;
+            if (!string.IsNullOrEmpty(capturedPath)) { try { File.Delete(capturedPath); } catch { } }
+            ResetIdle(mySession);
         }
     }
 
-    private async Task DeliverResultAsync(string text, IntPtr targetWindow, int session, Settings settings)
+    private async Task DeliverResultAsync(string text, IntPtr targetWindow, int session, Settings settings, bool waitForModifiers)
     {
-        if (session != _session) return;
+        if (!_recording.IsCurrent(session) || _disposed) return;
         if (!await Paster.TrySetClipboardAsync(text)) { Logger.Log("Zwischenablage fehlgeschlagen."); Toast.Show("Zwischenablage fehlgeschlagen.", ToastKind.Error); return; }
         Logger.Log($"Zwischenablage gesetzt ({text.Length} Zeichen), AutoPaste={settings.AutoPaste}");
-        if (session != _session) { _ = Paster.ClearIfUnchangedAsync(text, TimeSpan.Zero); return; }
+        if (!_recording.IsCurrent(session) || _disposed) { _ = Paster.ClearIfUnchangedAsync(text, TimeSpan.Zero); return; }
         if (!settings.AutoPaste) return;
+
+        if (waitForModifiers)
+        {
+            for (int attempt = 0; attempt < 80 && Paster.AreModifiersPressed(); attempt++)
+            {
+                await Task.Delay(25);
+                if (!_recording.IsCurrent(session) || _disposed) return;
+            }
+            if (Paster.AreModifiersPressed())
+            {
+                Toast.Show("Text liegt in der Zwischenablage – zum Einfügen zuerst die Zusatztasten loslassen.", ToastKind.Info);
+                return;
+            }
+        }
 
         bool refocused = Paster.RefocusIfNeeded(targetWindow);
         await Task.Delay(60); // dem Zielfenster kurz Zeit geben, den Fokus zu übernehmen
-        if (session != _session) return;
+        if (!_recording.IsCurrent(session) || _disposed) return;
         IntPtr fg = Paster.GetActiveWindow();
 
         if (settings.StrictPasteTarget && targetWindow != IntPtr.Zero && fg != targetWindow)
@@ -277,7 +338,7 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
     // ── Blitznotiz: nur ablegen (Datei + Zwischenablage), KEIN Einfügen ins aktive Fenster ──
     private async Task DeliverBlitzNoteAsync(string text, int session, Settings settings)
     {
-        if (session != _session) return;
+        if (!_recording.IsCurrent(session) || _disposed) return;
 
         bool savedToFile = false;
         try { BlitzNoteStore.Append(settings, DateTime.Now, text); savedToFile = true; }
@@ -334,17 +395,23 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
         return false;
     }
 
-    private void ResetIdle() { _state = AppState.Idle; UpdateUi(); }
+    private void ResetIdle(int session)
+    {
+        if (session != _recording.Session || _disposed) return;
+        _recording.Complete(session);
+        _input.ActiveToggle = null;
+        UpdateUi();
+    }
 
     private void UpdateUi()
     {
-        switch (_state)
+        switch (_recording.State)
         {
-            case AppState.Recording:
+            case RecordingState.Recording:
                 _animator.SetState(TrayVisual.Recording);
                 TrayTooltip = $"{AppBrand.Name} – Aufnahme…";
                 break;
-            case AppState.Processing:
+            case RecordingState.Processing:
                 _animator.SetState(TrayVisual.Processing);
                 TrayTooltip = $"{AppBrand.Name} – verarbeite…";
                 break;
@@ -355,7 +422,7 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    private bool IsStale(int session, CancellationToken token) => token.IsCancellationRequested || session != _session;
+    private bool IsStale(int session, CancellationToken token) => token.IsCancellationRequested || !_recording.IsCurrent(session) || _disposed;
 
     // ── Menü ────────────────────────────────────────────────────────────────────
     private void OpenSettings()
@@ -363,8 +430,20 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
         if (_settingsWindow != null) { _settingsWindow.Activate(); return; }
         var win = new SettingsWindow(_settings);
         _settingsWindow = win;
+        win.CaptureShortcutRequested += () =>
+        {
+            HandleEscape();
+            _input.BeginCapture();
+        };
+        void CaptureCompleted(DictationShortcut? binding) => Dispatcher.UIThread.Post(() =>
+        {
+            if (ReferenceEquals(_settingsWindow, win)) win.CompleteShortcutCapture(binding);
+        });
+        _input.CaptureCompleted += CaptureCompleted;
         win.Closed += (_, _) =>
         {
+            _input.CancelCapture();
+            _input.CaptureCompleted -= CaptureCompleted;
             _settingsWindow = null;
             if (!win.Saved) return;
             _settings = Settings.Load();   // frische Werte (inkl. Geheimnisse separat über SecretStore)
@@ -387,8 +466,13 @@ internal sealed class TrayViewModel : INotifyPropertyChanged, IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
+        _recording.Cancel();
+        _input.CancelCapture();
+        try { _mouseHook?.Dispose(); } catch { }
         try { _hook.Dispose(); } catch { }
-        try { _recorder.Dispose(); } catch { }
+        try { _cts?.Cancel(); } catch { }
+        try { _recorder?.Cancel(); _recorder?.Dispose(); } catch { }
         try { _cts?.Dispose(); } catch { }
         _animator.Dispose();
         Logger.Flush();

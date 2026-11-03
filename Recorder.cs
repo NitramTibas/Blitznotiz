@@ -135,6 +135,7 @@ public sealed class Recorder : IDisposable
             lock (_writerLock) { _writer?.Dispose(); _writer = null; }
             _waveIn?.Dispose();
             _waveIn = null;
+            _stopped?.TrySetResult(true); // Cancel may dispose before RecordingStopped is delivered.
         }
         DeleteFile();
     }

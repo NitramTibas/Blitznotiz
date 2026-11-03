@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Compile the production input/state/settings code, without starting Avalonia or native hooks. -->
+    <Compile Include="../../ShortcutInput.cs" Link="Production/ShortcutInput.cs" />
+    <Compile Include="../../DictationShortcut.cs" Link="Production/DictationShortcut.cs" />
+    <Compile Include="../../RecordingGate.cs" Link="Production/RecordingGate.cs" />
+    <Compile Include="../../MouseHook.cs" Link="Production/MouseHook.cs" />
+    <Compile Include="../../KeyNames.cs" Link="Production/KeyNames.cs" />
+    <Compile Include="../../Settings.cs" Link="Production/Settings.cs" />
+    <Compile Include="../../Workflows.cs" Link="Production/Workflows.cs" />
+    <Compile Include="../../AppBrand.cs" Link="Production/AppBrand.cs" />
+  </ItemGroup>
+</Project>

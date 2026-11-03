@@ -21,11 +21,8 @@ public sealed class KeyboardHook : IDisposable
     private readonly LowLevelKeyboardProc _proc;
     private IntPtr _hookId = IntPtr.Zero;
 
-    public event Action<int>? KeyPressed;
-    public event Action<int>? KeyReleased;
-
-    /// <summary>true = Taste NICHT an andere Programme weiterreichen (eigene Hotkeys schlucken).</summary>
-    public Func<int, bool>? SwallowKey;
+    /// <summary>Returns the routing decision for this physical down/up event.</summary>
+    public Func<int, bool, bool>? ProcessInput;
 
     public KeyboardHook()
     {
@@ -62,10 +59,7 @@ public sealed class KeyboardHook : IDisposable
                     bool isDown = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
                     bool isUp = message == WM_KEYUP || message == WM_SYSKEYUP;
 
-                    if (isDown) KeyPressed?.Invoke(vkCode);
-                    else if (isUp) KeyReleased?.Invoke(vkCode);
-
-                    if ((isDown || isUp) && SwallowKey != null && SwallowKey(vkCode))
+                    if ((isDown || isUp) && ProcessInput?.Invoke(vkCode, isDown) == true)
                         return (IntPtr)1;
                 }
             }
@@ -83,6 +77,7 @@ public sealed class KeyboardHook : IDisposable
         {
             UnhookWindowsHookEx(_hookId);
             _hookId = IntPtr.Zero;
+            GC.KeepAlive(_proc);
         }
     }
 

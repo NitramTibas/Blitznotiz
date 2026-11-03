@@ -38,18 +38,11 @@ jobs:
         run: dotnet restore Blitztext.csproj --runtime win-x64 -p:SelfContained=true -p:PublishSingleFile=true
       - name: Build
         run: dotnet build Blitztext.csproj --configuration Release --runtime win-x64 --self-contained true --no-restore
-      - name: Run test projects when present
+      - name: Run automated shortcut tests
         run: |
-          $testProjects = @(Get-ChildItem -Path tests -Filter *.csproj -Recurse -ErrorAction SilentlyContinue)
-          if ($testProjects.Count -eq 0) {
-            Write-Warning 'No test projects exist yet. This run verifies compilation and packaging only.'
-            'Automated tests: NOT PRESENT. Windows input/audio/paste acceptance: NOT RUN.' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          } else {
-            foreach ($testProject in $testProjects) {
-              dotnet test $testProject.FullName --configuration Release --logger trx --results-directory TestResults
-              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            }
-          }
+          dotnet test tests/Blitztext.Tests/Blitztext.Tests.csproj --configuration Release --logger trx --results-directory TestResults
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          'Automated shortcut/state/settings tests passed. Physical Windows input/audio/paste acceptance: NOT RUN.' | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
       - name: Package self-contained executable
         run: >
           dotnet publish Blitztext.csproj --configuration Release --runtime win-x64 --self-contained true
@@ -91,3 +84,5 @@ jobs:
           path: TestResults/
           if-no-files-found: ignore
           retention-days: 14
+
+

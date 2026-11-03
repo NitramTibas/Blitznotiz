@@ -46,6 +46,7 @@ public sealed class Settings
     public string BlitzNotePanelSide { get; set; } = "right"; // "right" | "left" – Andock-Seite der Bibliothek
     public bool BlitzNoteImproved { get; set; } = true;       // true = sprachlich verbessert, false = wörtlich
     public HotkeyConfig Hotkeys { get; set; } = new();
+    public DictationShortcut DictationShortcut { get; set; } = new();
 
     [JsonIgnore]
     public static string Dir =>
